@@ -7,11 +7,18 @@ if (PHP_SAPI != "cli") {
 }
 
 $http = new swoole_http_server("0.0.0.0", 9501);
+$http->set([
+		'worker_num' => 8, //worker process num
+		//'backlog' => 128,   //listen backlog
+		'max_request' => 1000,
+		'dispatch_mode'=>2,  //important
+		'daemonize'=>false,
+		'debug_mode'=>1,
+]);
 
 $http->on('request', function ($request, $response) {
-		var_dump($request->get, $request->post);
-		$response->header("Content-Type", "text/html; charset=utf-8");
-		$response->end("<h1>Hello Swoole. #".rand(1000, 9999)."</h1>");
+		require_once 'hotlogic.php';
+		HotLogic::handleRequest($request,$response);
 		});
 
 $http->start();
