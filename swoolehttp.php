@@ -8,7 +8,7 @@ if (PHP_SAPI != "cli") {
 
 $http = new swoole_http_server("0.0.0.0", 9501);
 $http->set([
-		'worker_num' => 8, //worker process num
+		'worker_num' => 1, //worker process num
 		//'backlog' => 128,   //listen backlog
 		'max_request' => 1000,
 		'dispatch_mode'=>2,  //important
@@ -17,7 +17,9 @@ $http->set([
 ]);
 
 $http->on('request', function ($request, $response) {
+		// hot deployment
 		require_once 'hotlogic.php';
+		//sleep(3);
 		HotLogic::handleRequest($request,$response);
 		});
 

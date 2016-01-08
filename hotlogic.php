@@ -10,17 +10,19 @@ class HotLogic{
 				echo 'p';
 				break;
 			case 'PUT':
-				echo 'put';
+				echo 'put'.PHP_EOL;
+				var_dump($request->post);
 				break;
 			case 'PATCH':
-				echo 'patch';
+				echo 'patch'.PHP_EOL;
+				var_dump($request->post);
 				break;
 		}
-		echo $request->server['request_uri'].PHP_EOL;
+		//echo $request->server['request_uri'].PHP_EOL;
 		//var_dump($request->rawContent());
 
-		$response->header("Content-Type", "text/html; charset=utf-8");
-		$response->end("Hello Swoole. #".rand(1000, 9999));
+		$response->header("Content-Type", "application/vnd.collection+json");
+		$response->end("Hello Swoole. #");
 	}
 };
 
