@@ -8,9 +8,9 @@ if (PHP_SAPI != "cli") {
 
 $http = new swoole_http_server("0.0.0.0", 9501);
 $http->set([
-		'worker_num' => 1, //worker process num
+		'worker_num' => 4, //worker process num
 		//'backlog' => 128,   //listen backlog
-		'max_request' => 1000,
+		'max_request' => 10,
 		'dispatch_mode'=>2,  //important
 		'daemonize'=>false,
 		'debug_mode'=>1,

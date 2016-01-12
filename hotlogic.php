@@ -17,6 +17,10 @@ class HotLogic{
 				echo 'patch'.PHP_EOL;
 				var_dump($request->post);
 				break;
+			case 'DELETE':
+				echo 'del'.PHP_EOL;
+				echo $request->server['request_uri'].PHP_EOL;
+				break;
 		}
 		//echo $request->server['request_uri'].PHP_EOL;
 		//var_dump($request->rawContent());
