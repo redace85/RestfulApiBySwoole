@@ -3,14 +3,13 @@
 class Json_Collection {
 
 	static $version='1.0';
-	static $host='http://localhost:9501/';
+	static $host='http://localhost:9501';
 	static $labels=[
-		'version','href','links',
-		'items','queries','template',
-		'error',
+		'href','links','items',
+		'queries','template','error',
 		];
 
-	public function setHerf($suf)
+	public function setHref($suf)
 	{
 		$this->coll['href']=static::$host.$suf;
 		return $this;
@@ -26,6 +25,7 @@ class Json_Collection {
 		return $this;
 	}
 
+	// accepted data: name:prompt
 	public function setTemplate($data)
 	{
 		foreach($data as $name=>$prompt)
@@ -44,6 +44,7 @@ class Json_Collection {
 		return $this;
 	}
 
+	// accepted data: name:value
 	public function setQueries($suf,$prompt,$data)
 	{
 		$qu_arr['rel']='search';
@@ -67,6 +68,7 @@ class Json_Collection {
 		return $this;
 	}
 
+	// accepted data: rel:href
 	public function setLinks($data)
 	{
 		foreach($data as $rel=>$href)
@@ -84,16 +86,16 @@ class Json_Collection {
 		return $this;
 	}
 
+	// accepted rec_arr: pk:data & link
+	// data: name:value link: rel:href
 	public function setItems($rec_arr)
 	{
 		foreach($rec_arr as $pk=>$dl)
 		{
-			unset($item_arr);
-			$item_arr['href'] = static::$host.$pk;
+			$item_arr['href'] = static::$host.'/'.$pk;
 			// data and link
 			if(array_key_exists('data',$dl))
 			{
-				unset($data_arr);
 				foreach($dl['data'] as $name=>$value){
 					$data_arr[]=[
 						'name'=>$name,
@@ -103,13 +105,13 @@ class Json_Collection {
 				if(isset($data_arr))
 				{
 					$item_arr['data']=$data_arr;
+					unset($data_arr);
 				}
 			}
 
 			// may have links
 			if(array_key_exists('links',$dl))
 			{
-				unset($links_arr);
 				foreach($dl['links'] as $rel=>$href)
 				{
 					$links_arr[]=[
@@ -120,9 +122,11 @@ class Json_Collection {
 				if(isset($links_arr))
 				{
 					$item_arr['links']=$links_arr;
+					unset($links_arr);
 				}
 			}
 			$items_arr[]=$item_arr;
+			unset($item_arr);
 		}
 
 		if(isset($items_arr))
@@ -132,18 +136,68 @@ class Json_Collection {
 		return $this;
 	}
 
+	// accept an array to fill this object
+	public function fillWithArr($arr)
+	{
+		if(!is_array($arr))
+			return;
+		if(array_key_exists('error',$arr))
+		{
+			$e=$arr['error'];
+			$this->setError(
+					$e['title'],
+					$e['code'],
+					$e['msg']
+					);
+			// error happens no more scan is needed
+			return;
+		}
+
+		if(array_key_exists('href',$arr))
+		{
+			$this->setHref($arr['href']);
+
+			if(array_key_exists('links',$arr))
+				$this->setLinks($arr['links']);
+
+			if(array_key_exists('items',$arr))
+				$this->setItems($arr['items']);
+
+			if(array_key_exists('queries',$arr))
+			{
+				$q=$arr['queries'];
+				$this->setQueries(
+						$arr['href'],
+						$q['prompt'],
+						$q['data']);
+			}
+
+			if(array_key_exists('template',$arr))
+				$this->setTemplate($arr['template']);
+		}
+	}
+
 	public function getEncodedStr()
 	{
 		$col_arr['version']=static::$version;
-		foreach(static::$labels as $l)
+
+		if(isset($this->coll))
 		{
-			if(array_key_exists($l,$this->coll))
+			foreach(static::$labels as $l)
 			{
-				$col_arr[$l]=$this->coll[$l];
+				if(array_key_exists($l,$this->coll))
+				{
+					$col_arr[$l]=$this->coll[$l];
+				}
 			}
 		}
 
 		return json_encode(['collection'=>$col_arr]);
+	}
+
+	public function cleanUp()
+	{
+		unset($this->coll);
 	}
 };
 
