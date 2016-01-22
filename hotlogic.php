@@ -171,7 +171,7 @@ class HotLogic{
 
 			// template
 			$ret_arr['template']=[
-				'i_name'=>'Name of Items',
+				'i_name'=>'Name of Items(Unique)',
 				'i_num'=>'Number of Items',
 			];
 
@@ -203,36 +203,32 @@ class HotLogic{
 	static private function __saveItem($collection,$data,$redis)
 	{
 		do{
-			// validate data format
-			if(!array_key_exists('template',$data)||
-					!array_key_exists('data',$data['template']) )
-				break;
-
 			if($collection=='storage')
 			{
 				$redis->select(1);
+
+				// check data
+				if(!array_key_exists('i_name',$data) ||
+						!array_key_exists('i_num',$data) )
+					break;
+
+				$hash_data['i_name']=$data['i_name'];
+				$hash_data['i_num']=$data['i_num'];
+				$hash_data['last_timestamp']=time();
+
 				// CAS 4 concurrent programming
 				do{
 					$redis->watch('storage_count');
 					$idx=$redis->get('storage_count');
 					if(false==$idx)
-						$idx=0;
+						$idx=1;
 					$multi=$redis->multi()
 						->set('storage_count',$idx+1);
 				}while(false === $multi->exec());
 
-				$d= $data['template']['data'];
-				if(!array_key_exists('i_name',$d) ||
-						!array_key_exists('i_num',$d) )
-					break;
-
-				$hash_data['i_name']=$d['i_name'];
-				$hash_data['i_num']=$d['i_num'];
-				$hash_data['last_timestamp']=time();
-
 				if($redis->hMSet('storage:'.$idx,$hash_data))
 				{
-					$arr=['code'=>201,'location'=>$collection.$idx];
+					$arr=['code'=>201,'location'=>$collection.'/'.$idx];
 				}
 				else
 				{
@@ -252,6 +248,7 @@ class HotLogic{
 		{
 			// select db
 			$redis->select(1);
+
 			$del_num=$redis->del('storage:'.$item);
 			if(0!==$del_num)
 			{
@@ -270,11 +267,6 @@ class HotLogic{
 	static private function __putItem($collection,$item,$data,$redis)
 	{
 		do{
-			// validate data format
-			if(!array_key_exists('template',$data)||
-					!array_key_exists('data',$data['template']) )
-				break;
-
 			if($collection=='storage')
 			{
 				$redis->select(1);
@@ -284,13 +276,12 @@ class HotLogic{
 					break;
 				}
 
-				$d= $data['template']['data'];
-				if(!array_key_exists('i_name',$d) ||
-						!array_key_exists('i_num',$d) )
+				if(!array_key_exists('i_name',$data) ||
+						!array_key_exists('i_num',$data) )
 					break;
 
-				$hash_data['i_name']=$d['i_name'];
-				$hash_data['i_num']=$d['i_num'];
+				$hash_data['i_name']=$data['i_name'];
+				$hash_data['i_num']=$data['i_num'];
 				$hash_data['last_timestamp']=time();
 
 				if($redis->hMSet('storage:'.$item,$hash_data))
@@ -312,11 +303,6 @@ class HotLogic{
 	static private function __patchItem($collection,$item,$data,$redis)
 	{
 		do{
-			// validate data format
-			if(!array_key_exists('template',$data)||
-					!array_key_exists('data',$data['template']) )
-				break;
-
 			if($collection=='storage')
 			{
 				$redis->select(1);
@@ -326,14 +312,12 @@ class HotLogic{
 					break;
 				}
 
-				$d= $data['template']['data'];
 				$hash_data['last_timestamp']=time();
-
 				$fields=['i_name','i_num'];
 				foreach($fields as $f){
-					if(array_key_exists($f,$d))
+					if(array_key_exists($f,$data))
 					{
-						$hash_data[$f]=$d[$f];
+						$hash_data[$f]=$data[$f];
 					}
 				}
 

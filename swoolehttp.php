@@ -45,35 +45,65 @@ class HttpServer
 		return $this->redis;
 	}
 
-	static public function hotLogic($request,$redis)
+	static public function hotLogic($request,$json_col,$redis)
 	{
 		// hot deployment
 		require_once 'hotlogic.php';
 
 		$uri=$request->server['request_uri'];
-		switch($request->server['request_method']){
+		switch($request->server['request_method'])
+		{
 			case 'POST':
-				$post_data = $request->post;
-				echo 'Post '.print_r($post_data,true).PHP_EOL;
+				$p_data=$json_col
+					->parseRawData($request->rawContent());
 
-				$res_arr=HotLogic::handlePostReq(
-						$uri,$post_data,$redis);
+				if(false!==$p_data)
+				{
+					echo 'Post '.print_r($p_data,true).PHP_EOL;
+					$res_arr=HotLogic::handlePostReq(
+							$uri,$p_data,$redis);
+				}
+				else
+				{
+					// something wrong about posted data
+					$res_arr=['code'=>406];
+				}
 				break;
 			case 'DELETE':
 				echo 'Del '.$uri.PHP_EOL;
 				$res_arr=HotLogic::handleDelReq($uri,$redis);
 				break;
 			case 'PUT':
-				$post_data = $request->post;
-				echo 'Put '.print_r($post_data,true).PHP_EOL;
-				$res_arr=HotLogic::handlePutReq(
-						$uri,$post_data,$redis);
+				$p_data=$json_col
+					->parseRawData($request->rawContent());
+
+				if(false!==$p_data)
+				{
+					echo 'Put '.print_r($p_data,true).PHP_EOL;
+					$res_arr=HotLogic::handlePutReq(
+							$uri,$p_data,$redis);
+				}
+				else
+				{
+					// something wrong about posted data
+					$res_arr=['code'=>406];
+				}
 				break;
 			case 'PATCH':
-				$post_data = $request->post;
-				echo 'Patch '.print_r($post_data,true).PHP_EOL;
-				$res_arr=HotLogic::handlePatchReq(
-						$uri,$post_data,$redis);
+				$p_data=$json_col
+					->parseRawData($request->rawContent());
+
+				if(false!==$p_data)
+				{
+					echo 'Patch '.print_r($p_data,true).PHP_EOL;
+					$res_arr=HotLogic::handlePatchReq(
+							$uri,$p_data,$redis);
+				}
+				else
+				{
+					// something wrong about posted data
+					$res_arr=['code'=>406];
+				}
 				break;
 			case 'GET':
 				echo 'Get '.$uri.PHP_EOL;
@@ -98,33 +128,27 @@ class HttpServer
 
 	public function handleReq($request, $response)
 	{
-		//content filter
-		if(isset($request->header['content-type']) &&
-				'application/vnd.collection+json'==$request->header['content-type'])
-		{
-			$response->status(406);
-			$response->end('');
-		}
-
-		// logic layer
-		$res_arr = static::hotLogic($request,$this->getRedisIns());
-
+		// response headers
 		$response->header('Accept',
 				'application/vnd.collection+json');
 		$response->header('Accept-Charset',
 				'utf-8');
 		$response->header('Content-Type',
 				'application/vnd.collection+json');
-		
+
+		// logic layer
+		$res_arr = static::hotLogic($request,$this->json_col,$this->getRedisIns());
+
 		if(array_key_exists('code',$res_arr))
 		{
 			$code=$res_arr['code'];
 			$response->status($code);
+			echo 'StCode:'.$code.PHP_EOL;
 			if(201==$code)
 			{
 				//created extra header
 				$response->header('Location',
-						Json_Collection::$host.$res_arr['location']);
+						Json_Collection::$host.'/'.$res_arr['location']);
 			}
 		}
 		else
@@ -135,8 +159,10 @@ class HttpServer
 			$this->json_col->cleanUp();
 		}
 
+
 		$httpcontent = isset($ret_str)? $ret_str : '';
 		unset($ret_str);
+		echo 'Ret_Cont:'.$httpcontent.PHP_EOL;
 		$response->end($httpcontent);
 	}
 

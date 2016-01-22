@@ -1,7 +1,7 @@
 <?php
 
-class Json_Collection {
-
+class Json_Collection 
+{
 	static $version='1.0';
 	static $host='http://localhost:9501';
 	static $labels=[
@@ -134,6 +134,18 @@ class Json_Collection {
 			$this->coll['items']=$items_arr;
 		}
 		return $this;
+	}
+
+	public function parseRawData($raw_data)
+	{
+		$data = json_decode($raw_data,true);
+		if( is_array($data) &&
+				array_key_exists('template',$data)&&
+				array_key_exists('data',$data['template']) )
+		{
+			$ret_arr=array_column($data['template']['data'],'value','name');
+		}
+		return !empty($ret_arr)?$ret_arr:false;
 	}
 
 	// accept an array to fill this object
